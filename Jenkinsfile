@@ -13,12 +13,18 @@ pipeline {
             }
         }
 
+        stage('Check Docker Installation') {
+            steps {
+                sh 'docker --version'  // Check if Docker is installed
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image
                     echo 'Building Docker image...'
-                    def buildStatus = sh(script: 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .', returnStatus: true)
+                    // Explicitly pass variables and check if Docker build succeeds
+                    def buildStatus = sh(script: 'docker build -t my-flask-app:latest .', returnStatus: true)
                     if (buildStatus != 0) {
                         error 'Docker build failed!'
                     }
@@ -36,7 +42,7 @@ pipeline {
 
                     // Push the Docker image to Docker Hub
                     echo 'Pushing Docker image to Docker Hub...'
-                    def pushStatus = sh(script: 'docker push ${DOCKER_IMAGE}:${DOCKER_TAG}', returnStatus: true)
+                    def pushStatus = sh(script: 'docker push my-flask-app:latest', returnStatus: true)
                     if (pushStatus != 0) {
                         error 'Docker push failed!'
                     }
@@ -49,7 +55,7 @@ pipeline {
                 script {
                     // Run the Docker container
                     echo 'Running Docker container...'
-                    def runStatus = sh(script: 'docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}', returnStatus: true)
+                    def runStatus = sh(script: 'docker run -d my-flask-app:latest', returnStatus: true)
                     if (runStatus != 0) {
                         error 'Docker container failed to run!'
                     }
