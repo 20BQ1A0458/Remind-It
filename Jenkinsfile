@@ -51,9 +51,15 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
+                    // Debugging output for credentials
+                    echo "DOCKER_USERNAME: ${env.DOCKER_USERNAME}"
+                    echo "DOCKER_PASSWORD: ${env.DOCKER_PASSWORD}"
+
                     // Login to Docker Hub (ensure credentials are set in Jenkins credentials store)
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"
+                        // Use Docker login directly in Windows batch script
+                        bat "docker logout"
+                        bat "docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%"
                     }
 
                     // Push the Docker image to Docker Hub
