@@ -53,9 +53,7 @@ pipeline {
                 script {
                     // Ensure credentials are injected and available
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        echo "Using Docker username: ${DOCKER_USERNAME}"
-
-                        // Login to Docker Hub (correctly inject username and password)
+                        // Login to Docker Hub securely without echoing credentials
                         bat """
                             echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
                         """
