@@ -15,14 +15,14 @@ pipeline {
         stage('Install Docker') {
             steps {
                 script {
-                    // Install Docker if it's not already installed
+                    // Check if Docker is installed
                     if (sh(script: 'which docker', returnStatus: true) != 0) {
                         echo "Docker not found. Installing Docker..."
                         sh """
                             sudo apt-get update
                             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
                             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-                            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+                            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable"
                             sudo apt-get update
                             sudo apt-get install -y docker-ce
                             sudo systemctl start docker
@@ -39,6 +39,7 @@ pipeline {
             steps {
                 script {
                     // Clone the GitHub repository with credentials if private
+                    echo "Cloning GitHub repository..."
                     git credentialsId: GITHUB_CREDENTIALS, url: GITHUB_REPO_URL
                 }
             }
@@ -47,6 +48,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    echo "Building Docker image..."
                     // Build the Docker image using the Dockerfile in the repository
                     docker.build(DOCKER_IMAGE_NAME)
                 }
@@ -56,10 +58,11 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
+                    echo "Pushing Docker image to Docker Hub..."
                     // Push the Docker image to Docker Hub
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin"
-                        sh "docker push $DOCKER_IMAGE_NAME"
+                        sh "echo \$DOCKER_PASSWORD | docker login --username \$DOCKER_USERNAME --password-stdin"
+                        sh "docker push \$DOCKER_IMAGE_NAME"
                     }
                 }
             }
@@ -69,9 +72,10 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
+                    echo "Running Docker container..."
                     // Pull the image from Docker Hub and run the container (optional step)
-                    sh "docker pull $DOCKER_IMAGE_NAME"
-                    sh "docker run -d -p 5000:5000 $DOCKER_IMAGE_NAME"
+                    sh "docker pull \$DOCKER_IMAGE_NAME"
+                    sh "docker run -d -p 5000:5000 \$DOCKER_IMAGE_NAME"
                 }
             }
         }
