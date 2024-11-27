@@ -7,15 +7,31 @@ pipeline {
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Check Docker Installation') {
             steps {
-                checkout scm
+                script {
+                    // Check if Docker is installed
+                    def dockerCheck = bat(script: 'docker --version', returnStatus: true)
+                    if (dockerCheck != 0) {
+                        echo 'Docker is not installed. Installing Docker...'
+                        // Docker installation steps for Windows
+                        bat '''
+                        powershell -Command "Invoke-WebRequest -Uri https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe -OutFile DockerDesktopInstaller.exe"
+                        start /wait DockerDesktopInstaller.exe install
+                        del DockerDesktopInstaller.exe
+                        '''
+                        echo 'Docker installation completed. Please restart the agent and rerun the pipeline.'
+                        error('Pipeline stopped because Docker was just installed. Restart the agent and rerun.')
+                    } else {
+                        echo 'Docker is already installed.'
+                    }
+                }
             }
         }
 
-        stage('Check Docker Installation') {
+        stage('Checkout SCM') {
             steps {
-                bat 'docker --version'  // Check if Docker is installed
+                checkout scm
             }
         }
 
