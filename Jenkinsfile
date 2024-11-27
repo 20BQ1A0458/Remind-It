@@ -2,45 +2,30 @@ pipeline {
     agent any
 
     environment {
-        // Define Docker Hub credentials and repository
-        DOCKER_CREDENTIALS = 'dockerhub-creds'  // Jenkins credential ID for Docker Hub
-        DOCKER_IMAGE_NAME = 'bhargavram458/my-flask-app'  // Replace with your Docker image name
-
-        // Define GitHub repository URL (update with your GitHub repo URL)
-        GITHUB_REPO_URL = 'https://github.com/20BQ1A0458/Remind-It.git'  // GitHub repository URL
-        GITHUB_CREDENTIALS = 'github-creds'  // Jenkins credential ID for GitHub (if repository is private)
+        DOCKER_IMAGE = 'my-flask-app'
+        DOCKER_TAG = 'latest'
     }
 
     stages {
-        stage('Install Docker') {
+        stage('Checkout SCM') {
             steps {
-                script {
-                    // Check if Docker is installed
-                    if (sh(script: 'which docker', returnStatus: true) != 0) {
-                        echo "Docker not found. Installing Docker..."
-                        sh """
-                            sudo apt-get update
-                            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-                            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable"
-                            sudo apt-get update
-                            sudo apt-get install -y docker-ce
-                            sudo systemctl start docker
-                            sudo systemctl enable docker
-                        """
-                    } else {
-                        echo "Docker is already installed."
-                    }
-                }
+                checkout scm
             }
         }
 
-        stage('Clone GitHub Repo') {
+        stage('Install Docker') {
             steps {
                 script {
-                    // Clone the GitHub repository with credentials if private
-                    echo "Cloning GitHub repository..."
-                    git credentialsId: GITHUB_CREDENTIALS, url: GITHUB_REPO_URL
+                    // Check if Docker is installed and install if necessary
+                    def dockerInstalled = sh(script: 'docker --version', returnStatus: true)
+                    if (dockerInstalled != 0) {
+                        echo 'Docker not installed, attempting to install Docker...'
+                        // You can install Docker here if it's not present
+                        // For Windows, manual installation or script may be required, as automated installation might not work perfectly through Jenkins.
+                        echo 'Install Docker manually from: https://www.docker.com/get-started'
+                    } else {
+                        echo 'Docker is already installed.'
+                    }
                 }
             }
         }
@@ -48,9 +33,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Building Docker image..."
-                    // Build the Docker image using the Dockerfile in the repository
-                    docker.build(DOCKER_IMAGE_NAME)
+                    // Make sure the docker build command works on Windows
+                    echo 'Building Docker image...'
+                    def buildStatus = sh(script: 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .', returnStatus: true)
+                    if (buildStatus != 0) {
+                        error 'Docker build failed!'
+                    }
                 }
             }
         }
@@ -58,35 +46,43 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    echo "Pushing Docker image to Docker Hub..."
+                    // Login to Docker Hub (ensure credentials are set in Jenkins credentials store)
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    }
+
                     // Push the Docker image to Docker Hub
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo \$DOCKER_PASSWORD | docker login --username \$DOCKER_USERNAME --password-stdin"
-                        sh "docker push \$DOCKER_IMAGE_NAME"
+                    echo 'Pushing Docker image to Docker Hub...'
+                    def pushStatus = sh(script: 'docker push ${DOCKER_IMAGE}:${DOCKER_TAG}', returnStatus: true)
+                    if (pushStatus != 0) {
+                        error 'Docker push failed!'
                     }
                 }
             }
         }
 
-        // Optional: You can add a step to create and run a container from the pushed image
         stage('Run Docker Container') {
             steps {
                 script {
-                    echo "Running Docker container..."
-                    // Pull the image from Docker Hub and run the container (optional step)
-                    sh "docker pull \$DOCKER_IMAGE_NAME"
-                    sh "docker run -d -p 5000:5000 \$DOCKER_IMAGE_NAME"
+                    echo 'Running Docker container...'
+                    def runStatus = sh(script: 'docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}', returnStatus: true)
+                    if (runStatus != 0) {
+                        error 'Docker container failed to run!'
+                    }
                 }
             }
         }
     }
 
     post {
+        always {
+            echo 'Pipeline completed!'
+        }
         success {
-            echo "Pipeline executed successfully!"
+            echo 'Build and deployment successful!'
         }
         failure {
-            echo "Pipeline failed!"
+            echo 'Build or deployment failed.'
         }
     }
 }
