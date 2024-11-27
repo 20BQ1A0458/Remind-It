@@ -15,7 +15,7 @@ pipeline {
 
         stage('Check Docker Installation') {
             steps {
-                sh 'docker --version'  // Check if Docker is installed
+                bat 'docker --version'  // Check if Docker is installed
             }
         }
 
@@ -24,7 +24,7 @@ pipeline {
                 script {
                     echo 'Building Docker image...'
                     // Explicitly pass variables and check if Docker build succeeds
-                    def buildStatus = sh(script: 'docker build -t my-flask-app:latest .', returnStatus: true)
+                    def buildStatus = bat(script: 'docker build -t my-flask-app:latest .', returnStatus: true)
                     if (buildStatus != 0) {
                         error 'Docker build failed!'
                     }
@@ -37,12 +37,12 @@ pipeline {
                 script {
                     // Login to Docker Hub (ensure credentials are set in Jenkins credentials store)
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                        bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"
                     }
 
                     // Push the Docker image to Docker Hub
                     echo 'Pushing Docker image to Docker Hub...'
-                    def pushStatus = sh(script: 'docker push my-flask-app:latest', returnStatus: true)
+                    def pushStatus = bat(script: 'docker push my-flask-app:latest', returnStatus: true)
                     if (pushStatus != 0) {
                         error 'Docker push failed!'
                     }
@@ -55,7 +55,7 @@ pipeline {
                 script {
                     // Run the Docker container
                     echo 'Running Docker container...'
-                    def runStatus = sh(script: 'docker run -d my-flask-app:latest', returnStatus: true)
+                    def runStatus = bat(script: 'docker run -d my-flask-app:latest', returnStatus: true)
                     if (runStatus != 0) {
                         error 'Docker container failed to run!'
                     }
