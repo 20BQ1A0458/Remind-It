@@ -23,7 +23,7 @@ pipeline {
                         echo 'Docker installation completed. Please restart the agent and rerun the pipeline.'
                         error('Pipeline stopped because Docker was just installed. Restart the agent and rerun.')
                     } else {
-                        echo 'Docker is already installed.'
+                        echo 'Docker is already installed.' 
                     }
                 }
             }
