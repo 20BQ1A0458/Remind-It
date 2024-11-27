@@ -13,27 +13,10 @@ pipeline {
             }
         }
 
-        stage('Install Docker') {
-            steps {
-                script {
-                    // Check if Docker is installed and install if necessary
-                    def dockerInstalled = sh(script: 'docker --version', returnStatus: true)
-                    if (dockerInstalled != 0) {
-                        echo 'Docker not installed, attempting to install Docker...'
-                        // You can install Docker here if it's not present
-                        // For Windows, manual installation or script may be required, as automated installation might not work perfectly through Jenkins.
-                        echo 'Install Docker manually from: https://www.docker.com/get-started'
-                    } else {
-                        echo 'Docker is already installed.'
-                    }
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Make sure the docker build command works on Windows
+                    // Build Docker image
                     echo 'Building Docker image...'
                     def buildStatus = sh(script: 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .', returnStatus: true)
                     if (buildStatus != 0) {
@@ -64,6 +47,7 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
+                    // Run the Docker container
                     echo 'Running Docker container...'
                     def runStatus = sh(script: 'docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}', returnStatus: true)
                     if (runStatus != 0) {
