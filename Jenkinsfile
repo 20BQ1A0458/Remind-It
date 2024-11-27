@@ -56,8 +56,9 @@ pipeline {
                         echo "Using Docker username: ${DOCKER_USERNAME}"
 
                         // Login to Docker Hub (correctly inject username and password)
-                        bat "docker logout"
-                        bat "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                        bat """
+                            echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        """
                     }
 
                     // Push the Docker image to Docker Hub
