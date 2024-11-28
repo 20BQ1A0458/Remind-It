@@ -12,7 +12,7 @@ pipeline {
                 script {
                     // Check if Docker is installed
                     def dockerCheck = bat(script: 'docker --version', returnStatus: true)
-                    if (dockerCheck == 0) { // Treat 0 as failure
+                    if (dockerCheck != 0) { // Non-zero means failure
                         echo 'Docker is not installed. Installing Docker...'
                         // Docker installation steps for Windows
                         bat '''
@@ -23,7 +23,7 @@ pipeline {
                         echo 'Docker installation completed. Please restart the agent and rerun the pipeline.'
                         error('Pipeline stopped because Docker was just installed. Restart the agent and rerun.')
                     } else {
-                        echo 'Docker is already installed.' 
+                        echo 'Docker is already installed.'
                     }
                 }
             }
@@ -40,7 +40,7 @@ pipeline {
                 script {
                     echo 'Building Docker image...'
                     def buildStatus = bat(script: "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .", returnStatus: true)
-                    if (buildStatus == 0) { // Treat 0 as failure
+                    if (buildStatus != 0) { // Non-zero means failure
                         error 'Docker build failed!'
                     }
                 }
@@ -53,13 +53,13 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         echo 'Logging in to Docker Hub...'
                         def loginStatus = bat(script: "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin", returnStatus: true)
-                        if (loginStatus == 0) { // Treat 0 as failure
+                        if (loginStatus != 0) { // Non-zero means failure
                             error 'Docker login failed!'
                         }
 
                         echo 'Pushing Docker image to Docker Hub...'
                         def pushStatus = bat(script: "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                        if (pushStatus == 0) { // Treat 0 as failure
+                        if (pushStatus != 0) { // Non-zero means failure
                             error 'Docker push failed!'
                         }
                     }
@@ -72,7 +72,7 @@ pipeline {
                 script {
                     echo 'Running Docker container...'
                     def runStatus = bat(script: "docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                    if (runStatus == 0) { // Treat 0 as failure
+                    if (runStatus != 0) { // Non-zero means failure
                         error 'Docker container failed to run!'
                     }
                 }
