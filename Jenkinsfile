@@ -10,11 +10,9 @@ pipeline {
         stage('Check Docker Installation') {
             steps {
                 script {
-                    // Check if Docker is installed
                     def dockerCheck = bat(script: 'docker --version', returnStatus: true)
-                    if (dockerCheck != 0) { // Non-zero means failure
+                    if (dockerCheck != 0) {
                         echo 'Docker is not installed. Installing Docker...'
-                        // Docker installation steps for Windows
                         bat '''
                         powershell -Command "Invoke-WebRequest -Uri https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe -OutFile DockerDesktopInstaller.exe"
                         start /wait DockerDesktopInstaller.exe install
@@ -40,7 +38,7 @@ pipeline {
                 script {
                     echo 'Building Docker image...'
                     def buildStatus = bat(script: "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .", returnStatus: true)
-                    if (buildStatus != 0) { // Non-zero means failure
+                    if (buildStatus != 0) {
                         error 'Docker build failed!'
                     }
                 }
@@ -52,16 +50,22 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         echo 'Logging in to Docker Hub...'
-                        def loginStatus = bat(script: """
-                            echo | set /p nul=%DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                        """, returnStatus: true)
-                        if (loginStatus != 0) { // Non-zero means failure
+
+                        // Prevent password from being printed in logs
+                        def loginStatus = bat(
+                            script: """
+                            echo | docker login -u "%DOCKER_USERNAME%" --password-stdin < nul
+                            """, 
+                            returnStatus: true
+                        )
+
+                        if (loginStatus != 0) {
                             error 'Docker login failed!'
                         }
 
                         echo 'Pushing Docker image to Docker Hub...'
-                        def pushStatus = bat(script: "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                        if (pushStatus != 0) { // Non-zero means failure
+                        def pushStatus = bat(script: "docker push %DOCKER_USERNAME%/${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
+                        if (pushStatus != 0) {
                             error 'Docker push failed!'
                         }
                     }
@@ -74,7 +78,7 @@ pipeline {
                 script {
                     echo 'Running Docker container...'
                     def runStatus = bat(script: "docker run -d --name my-flask-container -p 8080:80 ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                    if (runStatus != 0) { // Non-zero means failure
+                    if (runStatus != 0) {
                         error 'Docker container failed to run!'
                     }
                 }
@@ -94,4 +98,3 @@ pipeline {
         }
     }
 }
- 
