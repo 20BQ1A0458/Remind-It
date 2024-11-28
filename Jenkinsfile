@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'my-flask-app'
+        DOCKER_IMAGE = 'my-flask-app1'
         DOCKER_TAG = 'latest'
     }
 
