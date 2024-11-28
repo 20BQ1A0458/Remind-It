@@ -51,13 +51,10 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         echo 'Logging in to Docker Hub...'
 
-                        // Prevent password from being printed in logs
-                        def loginStatus = bat(
-                            script: """
-                            echo | docker login -u "%DOCKER_USERNAME%" --password-stdin < nul
-                            """, 
-                            returnStatus: true
-                        )
+                        // Non-interactive login to Docker Hub
+                        def loginStatus = bat(script: """
+                            docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
+                        """, returnStatus: true)
 
                         if (loginStatus != 0) {
                             error 'Docker login failed!'
