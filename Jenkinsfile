@@ -59,7 +59,7 @@ pipeline {
 
                         echo 'Pushing Docker image to Docker Hub...'
                         def pushStatus = bat(script: "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                        if (pushStatus != 0) {
+                        if (pushStatus == 0) {
                             error 'Docker push failed!'
                         }
                     }
