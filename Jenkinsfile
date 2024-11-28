@@ -45,18 +45,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Run Docker Container') {
-            steps {
-                script {
-                    echo 'Running Docker container...'
-                    def runStatus = bat(script: "docker run -d --name my-flask-container -p 8080:80 ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                    if (runStatus != 0) {
-                        error 'Docker container failed to run!'
-                    }
-                }
-            }
-        }
     }
 
     post {
