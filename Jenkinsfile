@@ -53,14 +53,13 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         echo 'Logging in to Docker Hub...'
                         def loginStatus = bat(script: "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin", returnStatus: true)
-                        echo 'loginStatus'
-                        if (loginStatus == 0) {
+                        if (loginStatus != 0) {
                             error 'Docker login failed!'
                         }
 
                         echo 'Pushing Docker image to Docker Hub...'
                         def pushStatus = bat(script: "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
-                        if (pushStatus == 0) {
+                        if (pushStatus != 0) {
                             error 'Docker push failed!'
                         }
                     }
@@ -93,4 +92,3 @@ pipeline {
         }
     }
 }
-
