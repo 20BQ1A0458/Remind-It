@@ -52,7 +52,9 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         echo 'Logging in to Docker Hub...'
-                        def loginStatus = bat(script: "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin", returnStatus: true)
+                        def loginStatus = bat(script: """
+                            echo | set /p nul=%DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        """, returnStatus: true)
                         if (loginStatus != 0) { // Non-zero means failure
                             error 'Docker login failed!'
                         }
@@ -71,7 +73,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running Docker container...'
-                    def runStatus = bat(script: "docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
+                    def runStatus = bat(script: "docker run -d --name my-flask-container -p 8080:80 ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
                     if (runStatus != 0) { // Non-zero means failure
                         error 'Docker container failed to run!'
                     }
