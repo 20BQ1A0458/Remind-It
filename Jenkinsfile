@@ -39,8 +39,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker image...'
-                    // Explicitly pass variables and check if Docker build succeeds
-                    def buildStatus = bat(script: 'docker build -t my-flask-app:latest .', returnStatus: true)
+                    def buildStatus = bat(script: "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .", returnStatus: true)
                     if (buildStatus != 0) {
                         error 'Docker build failed!'
                     }
@@ -51,19 +50,18 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Ensure credentials are injected and available securely
-                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        // Login to Docker Hub securely without echoing credentials
-                        bat """
-                            echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin > nul
-                        """
-                    }
+                    withCredentials([usernamePassword(credentialsId: 'docker-c', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        echo 'Logging in to Docker Hub...'
+                        def loginStatus = bat(script: "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin", returnStatus: true)
+                        if (loginStatus != 0) {
+                            error 'Docker login failed!'
+                        }
 
-                    // Push the Docker image to Docker Hub
-                    echo 'Pushing Docker image to Docker Hub...'
-                    def pushStatus = bat(script: 'docker push my-flask-app:latest', returnStatus: true)
-                    if (pushStatus != 0) {
-                        error 'Docker push failed!'
+                        echo 'Pushing Docker image to Docker Hub...'
+                        def pushStatus = bat(script: "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
+                        if (pushStatus != 0) {
+                            error 'Docker push failed!'
+                        }
                     }
                 }
             }
@@ -72,9 +70,8 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Run the Docker container
                     echo 'Running Docker container...'
-                    def runStatus = bat(script: 'docker run -d my-flask-app:latest', returnStatus: true)
+                    def runStatus = bat(script: "docker run -d ${DOCKER_IMAGE}:${DOCKER_TAG}", returnStatus: true)
                     if (runStatus != 0) {
                         error 'Docker container failed to run!'
                     }
