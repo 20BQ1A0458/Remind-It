@@ -82,7 +82,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline  completed!'
+            echo 'Pipeline completed!'
         }
         success {
             echo 'Build and deployment successful!'
